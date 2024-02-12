@@ -1,13 +1,17 @@
 use std::process::Command;
 use std::string::String;
 
-fn main() {
+use nu_plugin::{serve_plugin, LabeledError, Plugin, JsonSerializer, EvaluatedCall};
+use nu_protocol::{Value, PluginSignature, Type,Category,span};
+
+
+fn generate_table() {
     // https://stackoverflow.com/questions/21011330/how-do-i-invoke-a-system-command-and-capture-its-output
 
     let output = Command::new("dpkg")
         .arg("--list")
         .output()
-        .expect("failed to execute process");
+        .expect("failed to execute dpkg");
 
     // println!("status: {}", output.status);
     // println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
@@ -86,6 +90,38 @@ fn main() {
     }
 
     dbg!(packages);
+}
+
+struct DpkgTable;
+
+impl Plugin for DpkgTable {
+    fn signature(&self) -> Vec<PluginSignature> {
+        vec![PluginSignature::build("dpkgtable")
+            .usage("creates a table of all known packages in a Debian system.")
+            .input_output_types(vec![(Type::String,Type::String)])
+            .category(Category::System)]
+    }
+
+    fn run(
+        &mut self,
+        name: &str,
+        config: &Option<Value>,
+        call: &EvaluatedCall,
+        input: &Value,
+    ) -> Result<Value, LabeledError> {
+        let tag = call.head;
+        Ok(
+            Value::String { val: String::from("hola"),internal_span: tag}
+        )
+    }
+
+
+}
+
+
+
+fn main() {
+    serve_plugin(&mut DpkgTable {}, JsonSerializer {})
 }
 
 // We generate the table of packages. It remains to see how to interact with nushell.
