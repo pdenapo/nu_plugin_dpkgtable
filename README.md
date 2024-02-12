@@ -1,6 +1,8 @@
 # dpkgtable plugin for Nu shell
 
-This a plugin for nushell that captures the output of dpkg --list into a table.
+dpkg is the main low-level tool for managing packages in a GNU/Linux Debian system.
+
+This a plugin for nushell that captures the output of dpkg --list (list of known packages) into a table.
 
     ~> dpkgtable | where name == "git"
     ╭───┬────────┬──────┬──────────────┬──────────────┬─────────────────────────────────────────────────────╮
