@@ -1,10 +1,18 @@
 use std::process::Command;
 use std::string::String;
 
-use nu_plugin::{serve_plugin, LabeledError, Plugin, JsonSerializer, EvaluatedCall,MsgPackSerializer};
+use nu_plugin::{serve_plugin, LabeledError, Plugin,EvaluatedCall,MsgPackSerializer};
 use nu_protocol::{Value, PluginSignature, Type,Category, Record};
 
 struct DpkgTable;
+
+struct Package <'a>  {
+  status:  &'a str,
+  name:  &'a str,
+  version:  &'a  str,
+  architecture:  &'a  str,
+  description:  &'a str      
+}
 
 impl Plugin for DpkgTable {
     fn signature(&self) -> Vec<PluginSignature> {
@@ -27,7 +35,7 @@ impl Plugin for DpkgTable {
 
             // https://stackoverflow.com/questions/21011330/how-do-i-invoke-a-system-command-and-capture-its-output
         
-            let output = Command::new("dpkg")
+            let output = Command::new("/usr/bin/dpkg")
                 .arg("--list")
                 .output()
                 .expect("failed to execute dpkg");
@@ -54,14 +62,16 @@ impl Plugin for DpkgTable {
             // Internally, a vector of values
         
             let mut list: Vec<Value>= Vec::new();
-            let mut column_names: Vec<&str>= vec!["status","name","version","architecture","description"];
         
+            // This loop parses ecach line
+
             for line in lines {
                 //println!("line= {}", line);
                 
                 if just_found {
                    just_found= false;
                    
+                   // In the line immediately after the one begining with ||/,
                    // we look for the columns with - that indicate columns breaks
                    // and store the indexes
         
@@ -75,21 +85,28 @@ impl Plugin for DpkgTable {
                 }
                 // We look for the line starting with ||/ that has the column names
                 if line.starts_with("||/") {
-                    //println!("¡Found! \n");
-                    //let parts = line.split_whitespace();
-                    //column_names = parts.collect();
                     just_found = true;
                     found = true;
-                    //dbg!(column_names.clone());
                 }
         
+                // We ignore all the lines befor that
+
                 if !found { 
-                    //println!("ignorada");
                     continue };
                 if line.is_empty() {continue};
         
                 let mut previous_break;
-                let mut record = Record::new();
+
+                // Eacch line corresponds to a package. 
+
+                let mut package= Package{
+                    status: "",
+                    name: "",
+                    version: "",
+                    architecture: "",
+                    description: ""
+                };
+
                 previous_break = &column_breaks[0];
                 for (i, new_break) in column_breaks.iter().enumerate() {
                     if i==0 {continue} ; 
@@ -101,16 +118,43 @@ impl Plugin for DpkgTable {
                     else
                     { start=0}; 
                     let slice = &line[start..*new_break];
-                    //dbg!("slice {}",slice);
+                    let slice_trimmed = slice.trim_end();
+                    if i==1 {
+                        package.status=slice_trimmed;
+                    }
+                    else if i==2 {
+                        package.name= slice_trimmed;
+                    }
+                    else if i==3 {
+                        package.version= slice_trimmed;
+                    }
+                    else if i==4 {
+                        package.architecture= slice_trimmed;
+                    }
                     previous_break = new_break;
-                    let value = Value::String { val: slice.trim_end().to_string(),internal_span: tag};
-                    record.push(column_names[i],value);           
+                              
                 };
                 let start= *previous_break+1;
                 let slice = &line[start..];
-                //println!("final slice {}",slice);
-                let value = Value::String { val: slice.trim_end().to_string(),internal_span: tag};
-                record.push("final",value);
+                let slice_trimmed = slice.trim_end();
+                package.description= slice_trimmed;
+                
+                // Finally, we convert the package to a record that nushell can read.
+
+                let mut record = Record::new();
+                let value = Value::String { val:package.status.to_string() ,internal_span: tag};
+                record.push("status",value);
+                let value = Value::String { val: package.name.to_string(),internal_span: tag};
+                record.push("name",value);
+                let value = Value::String { val: package.version.to_string(),internal_span: tag};
+                record.push("version",value);
+                let value = Value::String { val: package.architecture.to_string(),internal_span: tag};
+                record.push("architecture",value);
+                let value = Value::String { val: package.description.to_string(),internal_span: tag};
+                record.push("description",value);
+
+                // and we add it to the table
+
                 list.push(Value::Record{val:record,internal_span:tag});
             }
             Ok(
@@ -123,4 +167,3 @@ fn main() {
     serve_plugin(&mut DpkgTable {}, MsgPackSerializer {})
 }
 
-// We generate the table of packages. It remains to see how to interact with nushell.
