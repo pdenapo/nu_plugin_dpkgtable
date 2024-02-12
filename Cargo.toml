@@ -1,5 +1,5 @@
 [package]
-name = "nu_plugin_dpkg"
+name = "nu_plugin_dpkgtable"
 version = "0.1.0"
 edition = "2021"
 

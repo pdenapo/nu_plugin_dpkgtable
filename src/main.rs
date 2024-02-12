@@ -2,7 +2,7 @@ use std::process::Command;
 use std::string::String;
 
 use nu_plugin::{serve_plugin, LabeledError, Plugin, JsonSerializer, EvaluatedCall};
-use nu_protocol::{Value, PluginSignature, Type,Category,span};
+use nu_protocol::{Value, PluginSignature, Type,Category, Record};
 
 
 fn generate_table() {
@@ -110,15 +110,31 @@ impl Plugin for DpkgTable {
         input: &Value,
     ) -> Result<Value, LabeledError> {
         let tag = call.head;
+
+        // A table is a list of records
+        // a and b are the column names
+        
+        let mut list: Vec<Value>= Vec::new();
+        let mut record = Record::new();
+        let value1 = Value::String { val: String::from("hola"),internal_span: tag};
+        record.push("a",value1);
+        let value2 = Value::String { val: String::from("chau"),internal_span: tag};
+        record.push("b",value2);
+        list.push(Value::Record{val:record,internal_span:tag});
+
+        let mut record2 = Record::new();
+        let value3 = Value::String { val: String::from("hello"),internal_span: tag};
+        record2.push("a",value3);
+        let value2 = Value::String { val: String::from("good bye!"),internal_span: tag};
+        record2.push("b",value2);
+        list.push(Value::Record{val:record2,internal_span:tag});
         Ok(
-            Value::String { val: String::from("hola"),internal_span: tag}
+            Value::list(list, tag)           
         )
     }
 
 
 }
-
-
 
 fn main() {
     serve_plugin(&mut DpkgTable {}, JsonSerializer {})
