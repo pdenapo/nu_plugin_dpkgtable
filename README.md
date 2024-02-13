@@ -28,7 +28,9 @@ to remove the package #5 in the list (if running as root).
 ## Instalation
 
 After building the plug-in (with cargo build), register it with nushell (from the nushell prompt) with
-the register command. For instance:
+the register command. 
+
+For instance:
 
     register ./nu_plugin_dpkg/target/debug/nu_plugin_dpkgtable
 
