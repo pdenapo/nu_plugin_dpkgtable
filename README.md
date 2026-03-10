@@ -32,7 +32,7 @@ the register command.
 
 For instance:
 
-    register ./nu_plugin_dpkg/target/debug/nu_plugin_dpkgtable
+    plugin add ./nu_plugin_dpkg/target/debug/nu_plugin_dpkgtable
 
 
     
